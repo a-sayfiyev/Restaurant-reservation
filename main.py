@@ -79,6 +79,15 @@ class ReservationManager:
         self.reservations = {}
         self.id_counter = itertools.count(1)  # Unique ID generator
 
+    def is_available(self, date, time, table_number):
+        for reservation_id, reservation in self.reservations.items():
+            if reservation.date == date and reservation.time == time and reservation.table_number == table_number:
+                return False
+        return True
+
+    def get_reservation(self, reservation_id):
+        return self.reservations.get(reservation_id)
+
     def create_reservation(self, name, date, time, guests, table_number):
         if self.is_available(date, time, table_number):
             reservation_id = next(self.id_counter)  # Generate unique ID
@@ -87,6 +96,21 @@ class ReservationManager:
             return reservation_id  # Return the new ID
         else:
             return False
+
+    def print_all_reservations(self):
+        if not self.reservations:
+            print("No reservations found.")
+            return
+        for reservation_id, reservation in self.reservations.items():
+            print(f"Reservation ID: {reservation_id}")
+            reservation.print_reservation()
+
+    def cancel_reservation(self, reservation_id):
+        if reservation_id in self.reservations:
+            del self.reservations[reservation_id]
+            print(f"Reservation {reservation_id} has been cancelled.")
+        else:
+            print("No reservation found with that ID.")
 
 # Table Class
 class Table:
@@ -199,22 +223,25 @@ def manage_reservations(reservation_manager):
             reservation_manager.print_all_reservations()
 
         elif choice == "2":
-            date = input("Enter the date of the reservation (YYYY-MM-DD): ")
-            time = input("Enter the time of the reservation (HH:MM): ")
-            table_number = input("Enter the table number: ")
-            reservation = reservation_manager.get_reservation(
-                date, time, table_number)
-            if reservation:
-                reservation.print_reservation()
-            else:
-                print("No reservation found.")
+            try:
+                reservation_id = int(input("Enter the reservation ID: "))
+                reservation = reservation_manager.get_reservation(
+                    reservation_id)
+                if reservation:
+                    reservation.print_reservation()
+                else:
+                    print("No reservation found.")
+            except ValueError:
+                print("Invalid input. Please enter a valid reservation ID.")
+
 
         elif choice == "3":
-            date = input("Enter the date of the reservation (YYYY-MM-DD): ")
-            time = input("Enter the time of the reservation (HH:MM): ")
-            table_number = input("Enter the table number: ")
-            reservation_manager.cancel_reservation(date, time, table_number)
-            print("Reservation cancelled successfully.")
+            try:
+                reservation_id = int(
+                    input("Enter the reservation ID to cancel: "))
+                reservation_manager.cancel_reservation(reservation_id)
+            except ValueError:
+                print("Invalid input. Please enter a valid reservation ID.")
 
         elif choice == "4":
             break
@@ -224,18 +251,22 @@ def view_menu(menu):
     menu.print_menu()
 
 # Make Reservation Function
-def make_reservation(reservation_manager, menu):
+def make_reservation(reservation_manager, menu, table_manager):
     name = input("Enter your name: ")
     date = input("Enter reservation date (YYYY-MM-DD): ")
     time = input("Enter reservation time (HH:MM): ")
     guests = int(input("Enter number of guests: "))
+
+    print("\nAvailable Tables:")
+    table_manager.print_tables()  # Display available tables
     table_number = input("Enter table number: ")
 
-    success = reservation_manager.create_reservation(
+    reservation_id = reservation_manager.create_reservation(
         name, date, time, guests, table_number)
-    if success:
-        reservation = reservation_manager.get_reservation(
-            date, time, table_number)
+
+    if reservation_id:
+        print(f"\nReservation successful! Your reservation ID is: {reservation_id}")
+        reservation = reservation_manager.get_reservation(reservation_id)
         print("Menu:")
         menu.print_menu()
         print("Select up to 10 meals. Enter 'done' to finish.")
@@ -250,18 +281,10 @@ def make_reservation(reservation_manager, menu):
             else:
                 print("Meal not found. Please try again.")
 
-        print("\nReservation successful! Here's your reservation summary:")
+        print("\nHere's your reservation summary:")
         reservation.print_reservation()
     else:
         print("This seat is booked or invalid time/date provided.")
-
-# Cancel Reservation Function
-def cancel_reservation(reservation_manager):
-    date = input("Enter the date of the reservation to cancel (YYYY-MM-DD): ")
-    time = input("Enter the time of the reservation (HH:MM): ")
-    table_number = input("Enter the table number: ")
-    reservation_manager.cancel_reservation(date, time, table_number)
-    print("Reservation cancelled, if it existed.")
 
 # View Reservation Function
 def view_reservation_details(reservation_manager):
@@ -275,56 +298,65 @@ def view_reservation_details(reservation_manager):
     except ValueError:
         print("Invalid input. Please enter a valid reservation ID.")
 
+# Cancel Reservation Function
+def cancel_reservation(reservation_manager):
+    try:
+        reservation_id = int(input("Enter the reservation ID to cancel: "))
+        reservation_manager.cancel_reservation(reservation_id)
+    except ValueError:
+        print("Invalid input. Please enter a valid reservation ID.")
+
+
 # Update Reservation Function
 def update_reservation_details(reservation_manager, menu):
-    name = input("Enter your name: ")
-    date = input("Enter the date of your reservation (YYYY-MM-DD): ")
-    reservation = reservation_manager.find_reservation_by_name_and_date(
-        name, date)
+    try:
+        reservation_id = int(input("Enter your reservation ID: "))
+        reservation = reservation_manager.get_reservation(reservation_id)
+        if reservation:
+            print("Current reservation details:")
+            reservation.print_reservation()
 
-    if reservation:
-        print("Current reservation details:")
-        reservation.print_reservation()
+            # Update number of guests
+            new_guests = int(input(
+                "Enter the new number of guests (or press Enter to keep current): ") or reservation.guests)
+            reservation.update_guests(new_guests)
 
-        # Update number of guests
-        new_guests = int(input(
-            "Enter the new number of guests (or press Enter to keep current): ") or reservation.guests)
-        reservation.update_guests(new_guests)
+            # Update meals
+            print("\nWould you like to update meals? (yes/no): ")
+            if input().lower().startswith('y'):
+                print("Current meals in reservation:")
+                for meal, details in reservation.meals.items():
+                    print(f"{meal} x {details['quantity']}")
 
-        # Update meals
-        print("\nWould you like to update meals? (yes/no): ")
-        if input().lower().startswith('y'):
-            print("Current meals in reservation:")
-            for meal, details in reservation.meals.items():
-                print(f"{meal} x {details['quantity']}")
+                print("\nSelect an option:")
+                print("1. Add a meal")
+                print("2. Remove a meal")
+                print("3. Done")
+                while True:
+                    meal_choice = input("Choose an option: ")
+                    if meal_choice == "1":
+                        menu.print_menu()
+                        meal_to_add = input("Enter meal name to add: ")
+                        if menu.is_item_available(meal_to_add):
+                            reservation.add_meal(
+                                meal_to_add, menu.items[meal_to_add]['price'])
+                        else:
+                            print("Meal not found. Please try again.")
+                    elif meal_choice == "2":
+                        meal_to_remove = input("Enter meal name to remove: ")
+                        reservation.remove_meal(meal_to_remove)
+                    elif meal_choice == "3":
+                        break
 
-            print("\nSelect an option:")
-            print("1. Add a meal")
-            print("2. Remove a meal")
-            print("3. Done")
-            while True:
-                meal_choice = input("Choose an option: ")
-                if meal_choice == "1":
-                    menu.print_menu()
-                    meal_to_add = input("Enter meal name to add: ")
-                    if menu.is_item_available(meal_to_add):
-                        reservation.add_meal(
-                            meal_to_add, menu.items[meal_to_add]['price'])
-                    else:
-                        print("Meal not found. Please try again.")
-                elif meal_choice == "2":
-                    meal_to_remove = input("Enter meal name to remove: ")
-                    reservation.remove_meal(meal_to_remove)
-                elif meal_choice == "3":
-                    break
-
-        print("\nReservation updated:")
-        reservation.print_reservation()
-    else:
-        print("Reservation not found.")
+            print("\nReservation updated:")
+            reservation.print_reservation()
+        else:
+            print("No reservation found with this ID.")
+    except ValueError:
+        print("Invalid input. Please enter a valid reservation ID.")
 
 # Customer options function
-def customer_options(menu, reservation_manager):
+def customer_options(menu, reservation_manager, table_manager):
     while True:
         print("\nCustomer Options:")
         print("1. View Menu")
@@ -339,7 +371,7 @@ def customer_options(menu, reservation_manager):
         if customer_choice == "1":
             view_menu(menu)
         elif customer_choice == "2":
-            make_reservation(reservation_manager, menu)
+            make_reservation(reservation_manager, menu, table_manager)
         elif customer_choice == "3":
             view_restaurant_details()
         elif customer_choice == "4":
@@ -347,7 +379,8 @@ def customer_options(menu, reservation_manager):
         elif customer_choice == "5":
             view_reservation_details(reservation_manager)
         elif customer_choice == "6":
-            update_reservation_details(reservation_manager)
+            update_reservation_details(
+                reservation_manager, menu)  # Pass 'menu' here
         elif customer_choice == "7":
             break
 
@@ -368,6 +401,24 @@ def manage_tables(table_manager):
             table_manager.add_table(table_number, number_of_seats)
             print("Table added successfully.")
 
+        elif choice == "2":
+            table_number = int(input("Enter the table number to update: "))
+            new_number_of_seats = int(input("Enter the new number of seats: "))
+            table_manager.update_table(table_number, new_number_of_seats)
+            print("Table updated successfully.")
+
+        elif choice == "3":
+            table_number = int(input("Enter the table number to delete: "))
+            table_manager.delete_table(table_number)
+            print("Table deleted successfully.")
+
+        elif choice == "4":
+            print("\nCurrent Tables:")
+            table_manager.print_tables()
+
+        elif choice == "5":
+            break
+
 # Main Program
 def main():
     menu = Menu()
@@ -383,7 +434,7 @@ def main():
         choice = input("Enter your choice: ")
 
         if choice == "1":
-            customer_options(menu, reservation_manager)
+            customer_options(menu, reservation_manager, table_manager)
         elif choice == "2":
             staff_options(menu, reservation_manager, table_manager)
         elif choice == "3":
