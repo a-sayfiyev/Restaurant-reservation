@@ -34,7 +34,7 @@ class Menu:
             print(f"{name}: ${details['price']} - {details['description']}")
 
     def is_item_available(self, item):
-        return item in self.items
+        return item.lower() in (key.lower() for key in self.items)
 
 # Reservation Class
 class Reservation:
@@ -258,7 +258,7 @@ def make_reservation(reservation_manager, menu, table_manager):
     guests = int(input("Enter number of guests: "))
 
     print("\nAvailable Tables:")
-    table_manager.print_tables()  # Display available tables
+    table_manager.print_tables()
     table_number = input("Enter table number: ")
 
     reservation_id = reservation_manager.create_reservation(
@@ -273,11 +273,15 @@ def make_reservation(reservation_manager, menu, table_manager):
         while True:
             meal_choice = input(
                 "Enter meal name to add (or type 'done' to finish): ")
-            if meal_choice.lower() == 'done':
+            meal_choice_lower = meal_choice.lower()
+            found_meal = next(
+                (key for key in menu.items if key.lower() == meal_choice_lower), None)
+
+            if meal_choice == 'done':
                 break
-            if menu.is_item_available(meal_choice):
+            if found_meal:
                 reservation.add_meal(
-                    meal_choice, menu.items[meal_choice]['price'])
+                    found_meal, menu.items[found_meal]['price'])
             else:
                 print("Meal not found. Please try again.")
 
