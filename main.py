@@ -1,4 +1,5 @@
 import itertools
+from datetime import datetime
 
 # Menu Class
 class Menu:
@@ -77,7 +78,7 @@ class Reservation:
 class ReservationManager:
     def __init__(self):
         self.reservations = {}
-        self.id_counter = itertools.count(1)  # Unique ID generator
+        self.id_counter = itertools.count(1)
 
     def is_available(self, date, time, table_number):
         for reservation_id, reservation in self.reservations.items():
@@ -140,6 +141,14 @@ class TableManager:
     def print_tables(self):
         for table in self.tables.values():
             print(table)
+
+# Future date available
+def is_future_date(date_str, time_str):
+    """Check if the given date and time are in the future."""
+    input_datetime = datetime.strptime(
+        f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+    current_datetime = datetime.now()
+    return input_datetime > current_datetime
 
 # Implementing Staff Functions
 def staff_options(menu, reservation_manager, table_manager):
@@ -253,8 +262,13 @@ def view_menu(menu):
 # Make Reservation Function
 def make_reservation(reservation_manager, menu, table_manager):
     name = input("Enter your name: ")
-    date = input("Enter reservation date (YYYY-MM-DD): ")
-    time = input("Enter reservation time (HH:MM): ")
+    while True:
+        date = input("Enter reservation date (YYYY-MM-DD): ")
+        time = input("Enter reservation time (HH:MM): ")
+        if is_future_date(date, time):
+            break
+        else:
+            print("Please enter a future date and time.")
     guests = int(input("Enter number of guests: "))
 
     print("\nAvailable Tables:")
