@@ -91,10 +91,10 @@ class ReservationManager:
 
     def create_reservation(self, name, date, time, guests, table_number):
         if self.is_available(date, time, table_number):
-            reservation_id = next(self.id_counter)  # Generate unique ID
+            reservation_id = next(self.id_counter)
             reservation = Reservation(name, date, time, guests, table_number)
-            self.reservations[reservation_id] = reservation  # Use ID as key
-            return reservation_id  # Return the new ID
+            self.reservations[reservation_id] = reservation
+            return reservation_id
         else:
             return False
 
@@ -290,30 +290,34 @@ def make_reservation(reservation_manager, menu, table_manager):
     available_tables = [table for table in table_manager.tables.values() if table.number_of_seats >= guests]
     for table in available_tables:
         print(table)
+
     table_number = input("Choose one of the above table numbers: ")
 
     reservation_id = reservation_manager.create_reservation(
         name, date, time, guests, table_number)
 
     if reservation_id:
-        print(f"\nReservation successful! Your reservation ID is: {reservation_id}")
         reservation = reservation_manager.get_reservation(reservation_id)
         print("Menu:")
         menu.print_menu()
         print("Select up to 10 meals. Enter 'done' to finish.")
-    while True:
-        meal_choice = input(
-            "Enter meal name to add (or type 'done' to finish): ").strip()
-        found_meal = next(
-            (item for item in menu.items if item.lower() == meal_choice.lower()), None)
 
-        if meal_choice.lower() == 'done':
-            break
-        if found_meal:
-            reservation.add_meal(found_meal, menu.items[found_meal]['price'])
-        else:
-            print("Meal not found. Please try again.")
-        print("\nHere's your reservation summary:")
+        while True:
+            meal_choice = input(
+                "Enter meal name to add (or type 'done' to finish): ").strip()
+            found_meal = next(
+                (item for item in menu.items if item.lower() == meal_choice.lower()), None)
+
+            if meal_choice.lower() == 'done':
+                break
+            if found_meal:
+                reservation.add_meal(
+                    found_meal, menu.items[found_meal]['price'])
+            else:
+                print("Meal not found. Please try again.")
+
+        print(f"\nReservation successful! Your reservation ID is: {reservation_id}")
+        print("Here's your reservation summary:")
         reservation.print_reservation()
     else:
         print("This seat is booked or invalid time/date provided.")
@@ -338,7 +342,6 @@ def cancel_reservation(reservation_manager):
     except ValueError:
         print("Invalid input. Please enter a valid reservation ID.")
 
-
 # Update Reservation Function
 def update_reservation_details(reservation_manager, menu):
     try:
@@ -348,12 +351,10 @@ def update_reservation_details(reservation_manager, menu):
             print("Current reservation details:")
             reservation.print_reservation()
 
-            # Update number of guests
             new_guests = int(input(
                 "Enter the new number of guests (or press Enter to keep current): ") or reservation.guests)
             reservation.update_guests(new_guests)
 
-            # Update meals
             print("\nWould you like to update meals? (yes/no): ")
             if input().lower().startswith('y'):
                 print("Current meals in reservation:")
@@ -393,10 +394,10 @@ def customer_options(menu, reservation_manager, table_manager):
         print("\nCustomer Options:")
         print("1. View Menu")
         print("2. Make a Reservation")
-        print("3. View Restaurant Details")
-        print("4. Cancel a Reservation")
-        print("5. View Reservation Details")
-        print("6. Update Reservation Details")
+        print("3. View Reservation Details")
+        print("4. Update Reservation Details")
+        print("5. Cancel a Reservation")
+        print("6. View Restaurant Details")
         print("7. Back to Main Menu")
         customer_choice = input("Enter your choice: ")
 
@@ -405,14 +406,14 @@ def customer_options(menu, reservation_manager, table_manager):
         elif customer_choice == "2":
             make_reservation(reservation_manager, menu, table_manager)
         elif customer_choice == "3":
-            view_restaurant_details()
-        elif customer_choice == "4":
-            cancel_reservation(reservation_manager)
-        elif customer_choice == "5":
             view_reservation_details(reservation_manager)
-        elif customer_choice == "6":
+        elif customer_choice == "4":
             update_reservation_details(
-                reservation_manager, menu)  # Pass 'menu' here
+                reservation_manager, menu)
+        elif customer_choice == "5":
+            cancel_reservation(reservation_manager)
+        elif customer_choice == "6":
+            view_restaurant_details()
         elif customer_choice == "7":
             break
 
@@ -457,7 +458,6 @@ def main():
     reservation_manager = ReservationManager()
     table_manager = TableManager()
 
-
     while True:
         print("\nWelcome to our restaurant! Select your role:")
         print("1. Customer")
@@ -471,7 +471,6 @@ def main():
             staff_options(menu, reservation_manager, table_manager)
         elif choice == "3":
             break
-
 
 if __name__ == "__main__":
     main()
