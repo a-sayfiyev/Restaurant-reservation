@@ -1,5 +1,4 @@
 import itertools
-import random
 from datetime import datetime
 
 # Menu Class
@@ -126,7 +125,18 @@ class Table:
 # TableManager Class
 class TableManager:
     def __init__(self):
-        self.tables = {i: Table(i, random.randint(4, 15))for i in range(1, 11)}
+        self.tables = {
+            1: Table(1, 4),
+            2: Table(2, 6),
+            3: Table(3, 7),
+            4: Table(4, 5),
+            5: Table(5, 13),
+            6: Table(6, 10),
+            7: Table(7, 8),
+            8: Table(8, 14),
+            9: Table(9, 12),
+            10: Table(10, 15)
+        }
 
     def add_table(self, table_number, number_of_seats):
         self.tables[table_number] = Table(table_number, number_of_seats)
@@ -266,15 +276,21 @@ def make_reservation(reservation_manager, menu, table_manager):
     while True:
         date = input("Enter reservation date (YYYY-MM-DD): ")
         time = input("Enter reservation time (HH:MM): ")
-        if is_future_date(date, time):
-            break
-        else:
-            print("Please enter a future date and time.")
+        try:
+            if not is_future_date(date, time):
+                print("Please enter a future date and time.")
+            else:
+                break
+        except ValueError:
+            print(
+                "Invalid date or time format. Please use YYYY-MM-DD for date and HH:MM for time.")
     guests = int(input("Enter number of guests: "))
 
-    print("\nAvailable Tables:")
-    table_manager.print_tables()
-    table_number = input("Enter table number: ")
+    print("\nAvailable Tables for your party size:")
+    available_tables = [table for table in table_manager.tables.values() if table.number_of_seats >= guests]
+    for table in available_tables:
+        print(table)
+    table_number = input("Choose one of the above table numbers: ")
 
     reservation_id = reservation_manager.create_reservation(
         name, date, time, guests, table_number)
@@ -285,21 +301,18 @@ def make_reservation(reservation_manager, menu, table_manager):
         print("Menu:")
         menu.print_menu()
         print("Select up to 10 meals. Enter 'done' to finish.")
-        while True:
-            meal_choice = input(
-                "Enter meal name to add (or type 'done' to finish): ")
-            meal_choice_lower = meal_choice.lower()
-            found_meal = next(
-                (key for key in menu.items if key.lower() == meal_choice_lower), None)
+    while True:
+        meal_choice = input(
+            "Enter meal name to add (or type 'done' to finish): ").strip()
+        found_meal = next(
+            (item for item in menu.items if item.lower() == meal_choice.lower()), None)
 
-            if meal_choice == 'done':
-                break
-            if found_meal:
-                reservation.add_meal(
-                    found_meal, menu.items[found_meal]['price'])
-            else:
-                print("Meal not found. Please try again.")
-
+        if meal_choice.lower() == 'done':
+            break
+        if found_meal:
+            reservation.add_meal(found_meal, menu.items[found_meal]['price'])
+        else:
+            print("Meal not found. Please try again.")
         print("\nHere's your reservation summary:")
         reservation.print_reservation()
     else:
