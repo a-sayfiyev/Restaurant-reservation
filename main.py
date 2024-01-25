@@ -1,4 +1,5 @@
 import itertools
+import random
 from datetime import datetime
 
 # Menu Class
@@ -125,7 +126,7 @@ class Table:
 # TableManager Class
 class TableManager:
     def __init__(self):
-        self.tables = {i: Table(i, (i % 2 + 4))for i in range(1, 11)}  # Default 10 tables
+        self.tables = {i: Table(i, random.randint(4, 15))for i in range(1, 11)}
 
     def add_table(self, table_number, number_of_seats):
         self.tables[table_number] = Table(table_number, number_of_seats)
